@@ -19,7 +19,6 @@ import com.facebook.airlift.log.Logger;
 import com.facebook.drift.protocol.TTransportException;
 import com.facebook.drift.transport.client.Address;
 import com.facebook.drift.transport.netty.ssl.SslContextFactory;
-import com.facebook.drift.transport.netty.ssl.SslContextFactory.SslContextParameters;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
@@ -29,11 +28,13 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.epoll.Epoll;
 import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.ssl.SslContext;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 
 import java.net.InetSocketAddress;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.primitives.Ints.saturatedCast;
@@ -66,7 +67,6 @@ class ConnectionFactory
     @Override
     public Future<Channel> getConnection(ConnectionParameters connectionParameters, Address address)
     {
-        //sujay
         Class socketChannelClass = NioSocketChannel.class;
         if (connectionFactoryConfig.isNativeTransportEnabled()) {
             checkState(Epoll.isAvailable(), "native transport is not available");
@@ -85,7 +85,7 @@ class ConnectionFactory
                             connectionParameters.getMaxFrameSize(),
                             connectionParameters.getRequestTimeout(),
                             connectionParameters.getSocksProxy(),
-                            buildSSLContextParameters(connectionFactoryConfig).map(sslContextFactory::get)));
+                            getSslContextSupplier(address.isEncryptionRequired(), connectionParameters)));
 
             Promise<Channel> promise = group.next().newPromise();
             promise.setUncancellable();
@@ -121,19 +121,14 @@ class ConnectionFactory
     @Override
     public void close() {}
 
-    private Optional<SslContextParameters> buildSSLContextParameters(DriftNettyConnectionFactoryConfig clientConfig)
+    private Optional<Supplier<SslContext>> getSslContextSupplier(boolean encryptionRequired, ConnectionParameters connectionParameters)
     {
-        SslContextParameters sslContextConfig = new SslContextParameters(
-                clientConfig.getTrustCertificate(),
-                Optional.ofNullable(clientConfig.getKey()),
-                Optional.ofNullable(clientConfig.getKey()),
-                Optional.ofNullable(clientConfig.getKeyPassword()),
-                clientConfig.getSessionCacheSize(),
-                clientConfig.getSessionTimeout(),
-                clientConfig.getCiphers());
-
-        log.info("banana SSL Context: %s", sslContextConfig.toString());
-
-        return Optional.of(sslContextConfig);
+        if (encryptionRequired) {
+            log.info("banana encryption required. SSL Context Params %s", connectionParameters.getSslContextParameters().toString());
+            return connectionParameters.getSslContextParameters().map(sslContextFactory::get);
+        }
+        else {
+            return Optional.empty();
+        }
     }
 }
