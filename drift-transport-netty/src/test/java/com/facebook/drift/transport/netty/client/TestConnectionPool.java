@@ -15,6 +15,8 @@
  */
 package com.facebook.drift.transport.netty.client;
 
+import com.facebook.drift.client.address.SimpleAddressSelector.SimpleAddress;
+import com.facebook.drift.transport.client.Address;
 import com.facebook.drift.transport.netty.client.ConnectionManager.ConnectionParameters;
 import com.google.common.net.HostAndPort;
 import io.airlift.units.DataSize;
@@ -45,8 +47,8 @@ public class TestConnectionPool
     public void testPooling()
     {
         try (ConnectionPool pool = new ConnectionPool(new TestingConnectionManager(), new DefaultEventLoopGroup(), 10, new Duration(1, MINUTES))) {
-            HostAndPort address1 = HostAndPort.fromParts("localhost", 1234);
-            HostAndPort address2 = HostAndPort.fromParts("localhost", 4567);
+            SimpleAddress address1 = new SimpleAddress(HostAndPort.fromParts("localhost", 1234));
+            SimpleAddress address2 = new SimpleAddress(HostAndPort.fromParts("localhost", 4567));
 
             Channel channel1 = futureGet(pool.getConnection(PARAMETERS, address1));
             Channel channel2 = futureGet(pool.getConnection(PARAMETERS, address1));
@@ -64,7 +66,7 @@ public class TestConnectionPool
     public void testConnectionClosed()
     {
         try (ConnectionPool pool = new ConnectionPool(new TestingConnectionManager(), new DefaultEventLoopGroup(), 10, new Duration(1, MINUTES))) {
-            HostAndPort address = HostAndPort.fromParts("localhost", 1234);
+            SimpleAddress address = new SimpleAddress(HostAndPort.fromParts("localhost", 1234));
 
             Channel channel1 = futureGet(pool.getConnection(PARAMETERS, address));
             assertTrue(channel1.isOpen());
@@ -87,7 +89,7 @@ public class TestConnectionPool
             implements ConnectionManager
     {
         @Override
-        public Future<Channel> getConnection(ConnectionParameters connectionParameters, HostAndPort address)
+        public Future<Channel> getConnection(ConnectionParameters connectionParameters, Address address)
         {
             return ImmediateEventExecutor.INSTANCE.newSucceededFuture(new EmbeddedChannel());
         }

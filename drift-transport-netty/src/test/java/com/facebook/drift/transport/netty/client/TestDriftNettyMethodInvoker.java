@@ -22,6 +22,7 @@ import com.facebook.drift.codec.internal.builtin.VoidThriftCodec;
 import com.facebook.drift.codec.metadata.ThriftType;
 import com.facebook.drift.transport.MethodMetadata;
 import com.facebook.drift.transport.ParameterMetadata;
+import com.facebook.drift.transport.client.Address;
 import com.facebook.drift.transport.client.InvokeRequest;
 import com.facebook.drift.transport.client.MethodInvoker;
 import com.facebook.drift.transport.netty.buffer.TestingPooledByteBufAllocator;
@@ -423,7 +424,7 @@ public class TestDriftNettyMethodInvoker
             implements ConnectionManager
     {
         @Override
-        public Future<Channel> getConnection(ConnectionParameters connectionParameters, HostAndPort address)
+        public Future<Channel> getConnection(ConnectionParameters connectionParameters, Address address)
         {
             return new DefaultEventExecutor().newPromise();
         }

@@ -15,9 +15,11 @@
  */
 package com.facebook.drift.transport.netty.client;
 
+import com.facebook.airlift.log.Logger;
 import com.facebook.drift.protocol.TTransportException;
+import com.facebook.drift.transport.client.Address;
 import com.facebook.drift.transport.netty.ssl.SslContextFactory;
-import com.google.common.net.HostAndPort;
+import com.facebook.drift.transport.netty.ssl.SslContextFactory.SslContextParameters;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
@@ -31,6 +33,7 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 
 import java.net.InetSocketAddress;
+import java.util.Optional;
 
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.primitives.Ints.saturatedCast;
@@ -41,6 +44,8 @@ import static java.util.Objects.requireNonNull;
 class ConnectionFactory
         implements ConnectionManager
 {
+    private static final Logger log = Logger.get(ConnectionFactory.class);
+
     private final EventLoopGroup group;
     private final SslContextFactory sslContextFactory;
     private final ByteBufAllocator allocator;
@@ -59,8 +64,9 @@ class ConnectionFactory
     }
 
     @Override
-    public Future<Channel> getConnection(ConnectionParameters connectionParameters, HostAndPort address)
+    public Future<Channel> getConnection(ConnectionParameters connectionParameters, Address address)
     {
+        //sujay
         Class socketChannelClass = NioSocketChannel.class;
         if (connectionFactoryConfig.isNativeTransportEnabled()) {
             checkState(Epoll.isAvailable(), "native transport is not available");
@@ -79,11 +85,11 @@ class ConnectionFactory
                             connectionParameters.getMaxFrameSize(),
                             connectionParameters.getRequestTimeout(),
                             connectionParameters.getSocksProxy(),
-                            connectionParameters.getSslContextParameters().map(sslContextFactory::get)));
+                            buildSSLContextParameters(connectionFactoryConfig).map(sslContextFactory::get)));
 
             Promise<Channel> promise = group.next().newPromise();
             promise.setUncancellable();
-            bootstrap.connect(new InetSocketAddress(address.getHost(), address.getPort()))
+            bootstrap.connect(new InetSocketAddress(address.getHostAndPort().getHost(), address.getHostAndPort().getPort()))
                     .addListener((ChannelFutureListener) channelFuture -> notifyConnect(channelFuture, promise));
             return promise;
         }
@@ -114,4 +120,20 @@ class ConnectionFactory
 
     @Override
     public void close() {}
+
+    private Optional<SslContextParameters> buildSSLContextParameters(DriftNettyConnectionFactoryConfig clientConfig)
+    {
+        SslContextParameters sslContextConfig = new SslContextParameters(
+                clientConfig.getTrustCertificate(),
+                Optional.ofNullable(clientConfig.getKey()),
+                Optional.ofNullable(clientConfig.getKey()),
+                Optional.ofNullable(clientConfig.getKeyPassword()),
+                clientConfig.getSessionCacheSize(),
+                clientConfig.getSessionTimeout(),
+                clientConfig.getCiphers());
+
+        log.info("banana SSL Context: %s", sslContextConfig.toString());
+
+        return Optional.of(sslContextConfig);
+    }
 }

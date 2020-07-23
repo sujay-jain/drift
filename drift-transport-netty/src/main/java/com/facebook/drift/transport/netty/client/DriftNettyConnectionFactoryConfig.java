@@ -17,12 +17,19 @@ package com.facebook.drift.transport.netty.client;
 
 import com.facebook.airlift.configuration.Config;
 import com.facebook.airlift.configuration.ConfigDescription;
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
 import com.google.common.net.HostAndPort;
 import io.airlift.units.Duration;
 import io.airlift.units.MinDuration;
 
 import javax.validation.constraints.Min;
 
+import java.io.File;
+import java.util.List;
+
+import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class DriftNettyConnectionFactoryConfig
@@ -38,6 +45,12 @@ public class DriftNettyConnectionFactoryConfig
     private Duration sslContextRefreshTime = new Duration(1, MINUTES);
     private HostAndPort socksProxy;
     private boolean nativeTransportEnabled;
+    private List<String> ciphers = ImmutableList.of();
+    private File trustCertificate;
+    private File key;
+    private String keyPassword;
+    private long sessionCacheSize = 10_000;
+    private Duration sessionTimeout = new Duration(1, DAYS);
 
     public int getThreadCount()
     {
@@ -124,6 +137,82 @@ public class DriftNettyConnectionFactoryConfig
     public DriftNettyConnectionFactoryConfig setNativeTransportEnabled(boolean nativeTransportEnabled)
     {
         this.nativeTransportEnabled = nativeTransportEnabled;
+        return this;
+    }
+
+    public File getTrustCertificate()
+    {
+        return trustCertificate;
+    }
+
+    @Config("thrift.client.ssl.trust-certificate")
+    public DriftNettyConnectionFactoryConfig setTrustCertificate(File trustCertificate)
+    {
+        this.trustCertificate = trustCertificate;
+        return this;
+    }
+
+    public File getKey()
+    {
+        return key;
+    }
+
+    @Config("thrift.client.ssl.key")
+    public DriftNettyConnectionFactoryConfig setKey(File key)
+    {
+        this.key = key;
+        return this;
+    }
+
+    public String getKeyPassword()
+    {
+        return keyPassword;
+    }
+
+    @Config("thrift.client.ssl.key-password")
+    public DriftNettyConnectionFactoryConfig setKeyPassword(String keyPassword)
+    {
+        this.keyPassword = keyPassword;
+        return this;
+    }
+
+    public long getSessionCacheSize()
+    {
+        return sessionCacheSize;
+    }
+
+    @Config("thrift.client.ssl.session-cache-size")
+    public DriftNettyConnectionFactoryConfig setSessionCacheSize(long sessionCacheSize)
+    {
+        this.sessionCacheSize = sessionCacheSize;
+        return this;
+    }
+
+    public Duration getSessionTimeout()
+    {
+        return sessionTimeout;
+    }
+
+    @Config("thrift.client.ssl.session-timeout")
+    public DriftNettyConnectionFactoryConfig setSessionTimeout(Duration sessionTimeout)
+    {
+        this.sessionTimeout = sessionTimeout;
+        return this;
+    }
+
+    public List<String> getCiphers()
+    {
+        return ciphers;
+    }
+
+    @Config("thrift.client.ssl.ciphers")
+    public DriftNettyConnectionFactoryConfig setCiphers(String ciphers)
+    {
+        this.ciphers = Splitter
+                .on(',')
+                .trimResults()
+                .omitEmptyStrings()
+                .splitToList(requireNonNull(ciphers, "ciphers is null"));
         return this;
     }
 }

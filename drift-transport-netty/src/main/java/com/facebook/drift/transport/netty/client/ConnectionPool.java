@@ -16,9 +16,9 @@
 package com.facebook.drift.transport.netty.client;
 
 import com.facebook.drift.protocol.TTransportException;
+import com.facebook.drift.transport.client.Address;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.google.common.net.HostAndPort;
 import io.airlift.units.Duration;
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
@@ -65,7 +65,7 @@ class ConnectionPool
     }
 
     @Override
-    public Future<Channel> getConnection(ConnectionParameters connectionParameters, HostAndPort address)
+    public Future<Channel> getConnection(ConnectionParameters connectionParameters, Address address)
     {
         ConnectionKey key = new ConnectionKey(connectionParameters, address);
 
@@ -149,9 +149,9 @@ class ConnectionPool
     private static class ConnectionKey
     {
         private final ConnectionParameters connectionParameters;
-        private final HostAndPort address;
+        private final Address address;
 
-        public ConnectionKey(ConnectionParameters connectionParameters, HostAndPort address)
+        public ConnectionKey(ConnectionParameters connectionParameters, Address address)
         {
             this.connectionParameters = connectionParameters;
             this.address = address;
@@ -162,7 +162,7 @@ class ConnectionPool
             return connectionParameters;
         }
 
-        public HostAndPort getAddress()
+        public Address getAddress()
         {
             return address;
         }

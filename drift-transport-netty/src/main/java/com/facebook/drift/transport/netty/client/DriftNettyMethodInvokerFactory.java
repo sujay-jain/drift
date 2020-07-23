@@ -15,6 +15,7 @@
  */
 package com.facebook.drift.transport.netty.client;
 
+import com.facebook.airlift.log.Logger;
 import com.facebook.drift.transport.client.MethodInvoker;
 import com.facebook.drift.transport.client.MethodInvokerFactory;
 import com.facebook.drift.transport.netty.client.ConnectionManager.ConnectionParameters;
@@ -45,6 +46,8 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 public class DriftNettyMethodInvokerFactory<I>
         implements MethodInvokerFactory<I>, Closeable
 {
+    private static final Logger log = Logger.get(DriftNettyMethodInvokerFactory.class);
+
     private final Function<I, DriftNettyClientConfig> clientConfigurationProvider;
 
     private final EventLoopGroup group;
@@ -133,6 +136,7 @@ public class DriftNettyMethodInvokerFactory<I>
 
         Optional<SslContextParameters> sslContextConfig = Optional.empty();
         if (clientConfig.isSslEnabled()) {
+            log.info("SSL enabled: key %s keyPass %s", clientConfig.getKey(), clientConfig.getKeyPassword());
             sslContextConfig = Optional.of(new SslContextParameters(
                     clientConfig.getTrustCertificate(),
                     Optional.ofNullable(clientConfig.getKey()),
@@ -148,6 +152,7 @@ public class DriftNettyMethodInvokerFactory<I>
             socksProxy = defaultSocksProxy;
         }
 
+        log.info("SSLContext: %s", sslContextConfig.toString());
         return new ConnectionParameters(
                 clientConfig.getTransport(),
                 clientConfig.getProtocol(),
