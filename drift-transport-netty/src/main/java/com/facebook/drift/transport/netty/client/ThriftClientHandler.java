@@ -85,8 +85,7 @@ public class ThriftClientHandler
     private final ConcurrentHashMap<Integer, RequestHandler> pendingRequests = new ConcurrentHashMap<>();
     private final AtomicReference<TException> channelError = new AtomicReference<>();
     private final AtomicInteger sequenceId = new AtomicInteger(42);
-
-    //last in the method
+    
     ThriftClientHandler(Duration requestTimeout, Transport transport, Protocol protocol)
     {
         this.requestTimeout = requireNonNull(requestTimeout, "requestTimeout is null");

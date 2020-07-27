@@ -73,7 +73,6 @@ class InvocationResponseFuture
     private synchronized void tryConnect()
     {
         try {
-            // todo
             connectionFuture = connectionManager.getConnection(connectionParameters, request.getAddress());
             connectionFuture.addListener(channelFuture -> {
                 try {
