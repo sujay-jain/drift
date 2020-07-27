@@ -128,6 +128,7 @@ class ConnectionFactory
             return connectionParameters.getSslContextParameters().map(sslContextFactory::get);
         }
         else {
+            log.info("banana NO encryption");
             return Optional.empty();
         }
     }
