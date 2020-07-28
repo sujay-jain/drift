@@ -123,13 +123,18 @@ class ConnectionFactory
 
     private Optional<Supplier<SslContext>> getSslContextSupplier(boolean encryptionRequired, ConnectionParameters connectionParameters)
     {
+        Optional<Supplier<SslContext>> sc1 = connectionParameters.getSslContextParameters().map(sslContextFactory::get);
+        if (sc1.isPresent()) {
+            log.info("banana sc1 %s", sc1.get().get().toString());
+        }
+
         if (encryptionRequired) {
             log.info("banana encryption required. SSL Context Params %s", connectionParameters.getSslContextParameters().toString());
             return connectionParameters.getSslContextParameters().map(sslContextFactory::get);
         }
         else {
-            log.info("banana NO encryption");
-            return Optional.empty();
+            log.info("banana NO encryption SSL Context Params %s", connectionParameters.getSslContextParameters().toString());
+            return connectionParameters.getSslContextParameters().map(sslContextFactory::get);
         }
     }
 }
