@@ -50,7 +50,7 @@ interface ConnectionManager
         private final Duration requestTimeout;
 
         private final Optional<HostAndPort> socksProxy;
-        private final Optional<SslContextParameters> sslContextParameters;
+        private Optional<SslContextParameters> sslContextParameters;
 
         public ConnectionParameters(
                 Transport transport,
@@ -103,6 +103,11 @@ interface ConnectionManager
         public Optional<SslContextParameters> getSslContextParameters()
         {
             return sslContextParameters;
+        }
+
+        public void setSslContextParameters(Optional<SslContextParameters> sslContextParameters)
+        {
+            this.sslContextParameters = sslContextParameters;
         }
 
         @Override

@@ -20,4 +20,9 @@ import com.google.common.net.HostAndPort;
 public interface Address
 {
     HostAndPort getHostAndPort();
+
+    default boolean isEncryptionRequired()
+    {
+        return false;
+    }
 }

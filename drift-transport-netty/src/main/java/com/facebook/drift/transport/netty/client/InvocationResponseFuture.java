@@ -31,6 +31,7 @@ import io.netty.util.concurrent.Future;
 import javax.annotation.concurrent.GuardedBy;
 
 import java.io.IOException;
+import java.util.Optional;
 
 import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static java.util.Objects.requireNonNull;
@@ -73,6 +74,9 @@ class InvocationResponseFuture
     private synchronized void tryConnect()
     {
         try {
+            if (!request.getAddress().isEncryptionRequired() ) {
+                connectionParameters.setSslContextParameters(Optional.empty());
+            }
             connectionFuture = connectionManager.getConnection(connectionParameters, request.getAddress().getHostAndPort());
             connectionFuture.addListener(channelFuture -> {
                 try {
