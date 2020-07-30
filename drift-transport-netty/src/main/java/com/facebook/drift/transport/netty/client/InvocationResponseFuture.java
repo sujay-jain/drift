@@ -43,8 +43,9 @@ class InvocationResponseFuture
     private static final Logger log = Logger.get(InvocationResponseFuture.class);
 
     private final InvokeRequest request;
-    private final ConnectionParameters connectionParameters;
     private final ConnectionManager connectionManager;
+
+    private ConnectionParameters connectionParameters;
 
     @GuardedBy("this")
     private Future<Channel> connectionFuture;
@@ -77,9 +78,16 @@ class InvocationResponseFuture
     private synchronized void tryConnect()
     {
         try {
-            if (!connectionParameters.isEncryptionEnabled() && !request.getAddress().isEncryptionRequired()) {
+            if (request.getAddress().isEncryptionRequired().isPresent() && !request.getAddress().isEncryptionRequired().get()) {
                 log.info("banana Disabling SSL method %s address %s request %s", request.getMethod(), request.getAddress(), request.toString());
-                connectionParameters.setSslContextParameters(Optional.empty());
+                connectionParameters = new ConnectionParameters(
+                        connectionParameters.getTransport(),
+                        connectionParameters.getProtocol(),
+                        connectionParameters.getMaxFrameSize(),
+                        connectionParameters.getConnectTimeout(),
+                        connectionParameters.getRequestTimeout(),
+                        connectionParameters.getSocksProxy(),
+                        Optional.empty());
             }
             else {
                 log.info("banana SSL ON for method %s address %s request %s", request.getMethod(), request.getAddress(), request.toString());

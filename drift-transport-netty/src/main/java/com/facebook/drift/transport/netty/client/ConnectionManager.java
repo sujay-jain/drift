@@ -51,7 +51,6 @@ interface ConnectionManager
 
         private final Optional<HostAndPort> socksProxy;
         private Optional<SslContextParameters> sslContextParameters;
-        private boolean encryptionEnabled;
 
         public ConnectionParameters(
                 Transport transport,
@@ -60,8 +59,7 @@ interface ConnectionManager
                 Duration connectTimeout,
                 Duration requestTimeout,
                 Optional<HostAndPort> socksProxy,
-                Optional<SslContextParameters> sslContextParameters,
-                boolean encryptionEnabled)
+                Optional<SslContextParameters> sslContextParameters)
         {
             this.transport = requireNonNull(transport, "transport is null");
             this.protocol = requireNonNull(protocol, "protocol is null");
@@ -70,7 +68,6 @@ interface ConnectionManager
             this.requestTimeout = requireNonNull(requestTimeout, "requestTimeout is null");
             this.socksProxy = requireNonNull(socksProxy, "socksProxy is null");
             this.sslContextParameters = requireNonNull(sslContextParameters, "sslContextParameters is null");
-            this.encryptionEnabled = encryptionEnabled;
         }
 
         public Transport getTransport()
@@ -106,16 +103,6 @@ interface ConnectionManager
         public Optional<SslContextParameters> getSslContextParameters()
         {
             return sslContextParameters;
-        }
-
-        public void setSslContextParameters(Optional<SslContextParameters> sslContextParameters)
-        {
-            this.sslContextParameters = sslContextParameters;
-        }
-
-        public boolean isEncryptionEnabled()
-        {
-            return encryptionEnabled;
         }
 
         @Override

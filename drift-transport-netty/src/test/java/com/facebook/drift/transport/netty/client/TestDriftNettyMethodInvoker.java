@@ -338,8 +338,7 @@ public class TestDriftNettyMethodInvoker
                         new Duration(11, MILLISECONDS),
                         new Duration(13, MILLISECONDS),
                         Optional.empty(),
-                        Optional.empty(),
-                        false),
+                        Optional.empty()),
                 new HangingConnectionManager(),
                 executor,
                 new Duration(17, MILLISECONDS));
