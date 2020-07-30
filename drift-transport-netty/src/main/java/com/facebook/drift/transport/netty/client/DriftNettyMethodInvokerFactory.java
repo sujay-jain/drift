@@ -132,6 +132,7 @@ public class DriftNettyMethodInvokerFactory<I>
         }
 
         Optional<SslContextParameters> sslContextConfig = Optional.empty();
+
         if (clientConfig.isSslEnabled()) {
             sslContextConfig = Optional.of(new SslContextParameters(
                     clientConfig.getTrustCertificate(),
@@ -155,6 +156,7 @@ public class DriftNettyMethodInvokerFactory<I>
                 clientConfig.getConnectTimeout(),
                 clientConfig.getRequestTimeout(),
                 socksProxy,
-                sslContextConfig);
+                sslContextConfig,
+                clientConfig.isSslEnabled());
     }
 }

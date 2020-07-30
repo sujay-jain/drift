@@ -15,6 +15,7 @@
  */
 package com.facebook.drift.transport.netty.client;
 
+import com.facebook.airlift.log.Logger;
 import com.facebook.drift.TException;
 import com.facebook.drift.protocol.TTransportException;
 import com.facebook.drift.transport.client.ConnectionFailedException;
@@ -39,6 +40,8 @@ import static java.util.Objects.requireNonNull;
 class InvocationResponseFuture
         extends AbstractFuture<Object>
 {
+    private static final Logger log = Logger.get(InvocationResponseFuture.class);
+
     private final InvokeRequest request;
     private final ConnectionParameters connectionParameters;
     private final ConnectionManager connectionManager;
@@ -74,8 +77,12 @@ class InvocationResponseFuture
     private synchronized void tryConnect()
     {
         try {
-            if (!request.getAddress().isEncryptionRequired() ) {
+            if (!connectionParameters.isEncryptionEnabled() && !request.getAddress().isEncryptionRequired()) {
+                log.info("banana Disabling SSL method %s address %s request %s", request.getMethod(), request.getAddress(), request.toString());
                 connectionParameters.setSslContextParameters(Optional.empty());
+            }
+            else {
+                log.info("banana SSL ON for method %s address %s request %s", request.getMethod(), request.getAddress(), request.toString());
             }
             connectionFuture = connectionManager.getConnection(connectionParameters, request.getAddress().getHostAndPort());
             connectionFuture.addListener(channelFuture -> {
