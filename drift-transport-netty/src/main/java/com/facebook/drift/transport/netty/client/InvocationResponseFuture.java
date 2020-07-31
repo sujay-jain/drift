@@ -15,6 +15,7 @@
  */
 package com.facebook.drift.transport.netty.client;
 
+import com.facebook.airlift.log.Logger;
 import com.facebook.drift.TException;
 import com.facebook.drift.protocol.TTransportException;
 import com.facebook.drift.transport.client.ConnectionFailedException;
@@ -31,13 +32,17 @@ import io.netty.util.concurrent.Future;
 import javax.annotation.concurrent.GuardedBy;
 
 import java.io.IOException;
+import java.util.Optional;
 
 import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
+import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 class InvocationResponseFuture
         extends AbstractFuture<Object>
 {
+    private static final Logger log = Logger.get(InvocationResponseFuture.class);
+
     private final InvokeRequest request;
     private final ConnectionParameters connectionParameters;
     private final ConnectionManager connectionManager;
@@ -49,7 +54,27 @@ class InvocationResponseFuture
     private ThriftRequest thriftRequest;
 
     static InvocationResponseFuture createInvocationResponseFuture(InvokeRequest request, ConnectionParameters connectionParameters, ConnectionManager connectionManager)
+            throws TException
     {
+        Optional<Boolean> encryptionRequired = request.getAddress().isEncryptionRequired();
+        if (encryptionRequired.isPresent() && encryptionRequired.get() && !connectionParameters.getSslContextParameters().isPresent()) {
+            throw new TException(format(
+                    "Encrypted connection is requested to connect to %s but encryption is not configured for this Drift client instance",
+                    request.getAddress().getHostAndPort()));
+        }
+
+        if (encryptionRequired.isPresent() && !encryptionRequired.get()) {
+            log.debug("Disabling SSL method %s address %s request %s", request.getMethod(), request.getAddress(), request.toString());
+            connectionParameters = new ConnectionParameters(
+                    connectionParameters.getTransport(),
+                    connectionParameters.getProtocol(),
+                    connectionParameters.getMaxFrameSize(),
+                    connectionParameters.getConnectTimeout(),
+                    connectionParameters.getRequestTimeout(),
+                    connectionParameters.getSocksProxy(),
+                    Optional.empty());
+        }
+
         InvocationResponseFuture future = new InvocationResponseFuture(request, connectionParameters, connectionManager);
         // invocation can not be started from constructor, because it may start threads that can call back into the unpublished object
         future.tryConnect();

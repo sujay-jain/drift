@@ -17,7 +17,14 @@ package com.facebook.drift.transport.client;
 
 import com.google.common.net.HostAndPort;
 
+import java.util.Optional;
+
 public interface Address
 {
     HostAndPort getHostAndPort();
+
+    default Optional<Boolean> isEncryptionRequired()
+    {
+        return Optional.empty();
+    }
 }
