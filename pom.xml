@@ -36,6 +36,7 @@
         <module>drift-transport-apache</module>
         <module>drift-transport-netty</module>
         <module>drift-transport-spi</module>
+        <module>drift-codec-utils</module>
     </modules>
 
     <inceptionYear>2012</inceptionYear>
@@ -141,6 +142,12 @@
             <dependency>
                 <groupId>com.facebook.airlift</groupId>
                 <artifactId>log</artifactId>
+                <version>${dep.airlift.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>units</artifactId>
                 <version>${dep.airlift.version}</version>
             </dependency>
 
