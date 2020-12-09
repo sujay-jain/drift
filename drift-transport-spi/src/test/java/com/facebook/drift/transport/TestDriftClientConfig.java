@@ -40,7 +40,8 @@ public class TestDriftClientConfig
                 .setMaxBackoffDelay(new Duration(30, SECONDS))
                 .setBackoffScaleFactor(2.0)
                 .setMaxRetryTime(new Duration(1, MINUTES))
-                .setStatsEnabled(true));
+                .setStatsEnabled(true)
+                .setRetryThreads(16));
     }
 
     @Test
@@ -53,6 +54,7 @@ public class TestDriftClientConfig
                 .put("thrift.client.backoff-scale-factor", "2.2")
                 .put("thrift.client.max-retry-time", "33m")
                 .put("thrift.client.stats.enabled", "false")
+                .put("thrift.client.retry-threads", "10")
                 .build();
 
         DriftClientConfig expected = new DriftClientConfig()
@@ -61,7 +63,8 @@ public class TestDriftClientConfig
                 .setMaxBackoffDelay(new Duration(22, MINUTES))
                 .setBackoffScaleFactor(2.2)
                 .setMaxRetryTime(new Duration(33, MINUTES))
-                .setStatsEnabled(false);
+                .setStatsEnabled(false)
+                .setRetryThreads(10);
 
         assertFullMapping(properties, expected);
     }

@@ -46,6 +46,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
@@ -715,7 +716,8 @@ public class TestDriftMethodInvocation
                 addressSelector,
                 Optional.empty(),
                 stat,
-                ticker);
+                ticker,
+                Executors.newFixedThreadPool(16));
     }
 
     private static void assertClassifiedException(Throwable cause, ExceptionClassification exceptionClassification, int expectedRetries)

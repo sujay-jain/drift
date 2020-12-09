@@ -34,6 +34,7 @@ public class DriftClientConfig
     private Duration maxBackoffDelay = new Duration(30, SECONDS);
     private double backoffScaleFactor = 2.0;
     private Duration maxRetryTime = new Duration(1, MINUTES);
+    private int retryThreads = 16;
 
     private boolean statsEnabled = true;
 
@@ -119,6 +120,20 @@ public class DriftClientConfig
     public DriftClientConfig setStatsEnabled(boolean statsEnabled)
     {
         this.statsEnabled = statsEnabled;
+        return this;
+    }
+
+    @Min(1)
+    public int getRetryThreads()
+    {
+        return retryThreads;
+    }
+
+    @Config("thrift.client.retry-threads")
+    @ConfigDescription("Number of retry threads")
+    public DriftClientConfig setRetryThreads(int retryThreads)
+    {
+        this.retryThreads = retryThreads;
         return this;
     }
 }

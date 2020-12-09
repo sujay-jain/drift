@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
 
 import static com.facebook.drift.client.ExceptionClassifier.NORMAL_RESULT;
@@ -45,9 +46,11 @@ import static com.facebook.drift.client.FilteredMethodInvoker.createFilteredMeth
 import static com.facebook.drift.transport.MethodMetadata.toMethodMetadata;
 import static com.google.common.reflect.Reflection.newProxy;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.Executors.newFixedThreadPool;
 
 public class DriftClientFactory
 {
+    private static final int RETRY_THREADS = 16;
     private final ThriftCodecManager codecManager;
     private final Supplier<MethodInvoker> methodInvokerSupplier;
     private final AddressSelector<? extends Address> addressSelector;
@@ -124,7 +127,8 @@ public class DriftClientFactory
                 statHandler = new NullMethodInvocationStat();
             }
 
-            DriftMethodHandler handler = new DriftMethodHandler(metadata, method.getHeaderParameters(), invoker, method.isAsync(), addressSelector, retryPolicy, statHandler);
+            ExecutorService retryService = newFixedThreadPool(config.getRetryThreads());
+            DriftMethodHandler handler = new DriftMethodHandler(metadata, method.getHeaderParameters(), invoker, method.isAsync(), addressSelector, retryPolicy, statHandler, retryService);
             builder.put(method.getMethod(), handler);
         }
         Map<Method, DriftMethodHandler> methods = builder.build();
