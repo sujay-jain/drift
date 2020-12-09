@@ -15,6 +15,7 @@
  */
 package com.facebook.drift.client;
 
+import com.facebook.airlift.concurrent.BoundedExecutor;
 import com.facebook.drift.client.address.AddressSelector;
 import com.facebook.drift.client.stats.MethodInvocationStat;
 import com.facebook.drift.codec.metadata.ThriftHeaderParameter;
@@ -46,6 +47,7 @@ class DriftMethodHandler
     private final AddressSelector<? extends Address> addressSelector;
     private final RetryPolicy retryPolicy;
     private final MethodInvocationStat stat;
+    private final BoundedExecutor retryService;
 
     public DriftMethodHandler(
             MethodMetadata metadata,
@@ -54,7 +56,8 @@ class DriftMethodHandler
             boolean async,
             AddressSelector<? extends Address> addressSelector,
             RetryPolicy retryPolicy,
-            MethodInvocationStat stat)
+            MethodInvocationStat stat,
+            BoundedExecutor retryService)
     {
         this.metadata = requireNonNull(metadata, "metadata is null");
         this.headerParameters = requireNonNull(headersParameters, "headersParameters is null").stream()
@@ -64,6 +67,7 @@ class DriftMethodHandler
         this.addressSelector = requireNonNull(addressSelector, "addressSelector is null");
         this.retryPolicy = retryPolicy;
         this.stat = requireNonNull(stat, "stat is null");
+        this.retryService = requireNonNull(retryService, "retryService is null");
     }
 
     public boolean isAsync()
@@ -90,6 +94,6 @@ class DriftMethodHandler
             }
             parameters = newParameters.build();
         }
-        return createDriftMethodInvocation(invoker, metadata, headers, parameters, retryPolicy, addressSelector, addressSelectionContext, stat, Ticker.systemTicker());
+        return createDriftMethodInvocation(invoker, metadata, headers, parameters, retryPolicy, addressSelector, addressSelectionContext, stat, Ticker.systemTicker(), retryService);
     }
 }

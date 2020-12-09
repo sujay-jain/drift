@@ -15,6 +15,7 @@
  */
 package com.facebook.drift.client;
 
+import com.facebook.airlift.concurrent.BoundedExecutor;
 import com.facebook.drift.client.address.AddressSelector;
 import com.facebook.drift.client.stats.MethodInvocationStat;
 import com.facebook.drift.client.stats.MethodInvocationStatsFactory;
@@ -38,13 +39,16 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
 
+import static com.facebook.airlift.concurrent.Threads.daemonThreadsNamed;
 import static com.facebook.drift.client.ExceptionClassifier.NORMAL_RESULT;
 import static com.facebook.drift.client.FilteredMethodInvoker.createFilteredMethodInvoker;
 import static com.facebook.drift.transport.MethodMetadata.toMethodMetadata;
 import static com.google.common.reflect.Reflection.newProxy;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.Executors.newCachedThreadPool;
 
 public class DriftClientFactory
 {
@@ -110,6 +114,10 @@ public class DriftClientFactory
 
         Optional<String> qualifier = qualifierAnnotation.map(Class::getSimpleName);
 
+        // Create a bounded executor with a pool size at 4x number of processors
+        ExecutorService coreExecutor = newCachedThreadPool(daemonThreadsNamed(clientInterface != null ? clientInterface.getName() : "" + "-retry-service-%s"));
+        BoundedExecutor retryService = new BoundedExecutor(coreExecutor, 4 * Runtime.getRuntime().availableProcessors());
+
         ImmutableMap.Builder<Method, DriftMethodHandler> builder = ImmutableMap.builder();
         for (ThriftMethodMetadata method : serviceMetadata.getMethods()) {
             MethodMetadata metadata = toMethodMetadata(codecManager, method);
@@ -124,7 +132,7 @@ public class DriftClientFactory
                 statHandler = new NullMethodInvocationStat();
             }
 
-            DriftMethodHandler handler = new DriftMethodHandler(metadata, method.getHeaderParameters(), invoker, method.isAsync(), addressSelector, retryPolicy, statHandler);
+            DriftMethodHandler handler = new DriftMethodHandler(metadata, method.getHeaderParameters(), invoker, method.isAsync(), addressSelector, retryPolicy, statHandler, retryService);
             builder.put(method.getMethod(), handler);
         }
         Map<Method, DriftMethodHandler> methods = builder.build();

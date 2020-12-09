@@ -15,6 +15,7 @@
  */
 package com.facebook.drift.client;
 
+import com.facebook.airlift.concurrent.BoundedExecutor;
 import com.facebook.airlift.log.Logger;
 import com.facebook.drift.TException;
 import com.facebook.drift.client.address.AddressSelector;
@@ -68,6 +69,7 @@ class DriftMethodInvocation<A extends Address>
     private final Optional<String> addressSelectionContext;
     private final MethodInvocationStat stat;
     private final Ticker ticker;
+    private final BoundedExecutor retryService;
     private final long startTime;
 
     @GuardedBy("this")
@@ -95,7 +97,8 @@ class DriftMethodInvocation<A extends Address>
             AddressSelector<A> addressSelector,
             Optional<String> addressSelectionContext,
             MethodInvocationStat stat,
-            Ticker ticker)
+            Ticker ticker,
+            BoundedExecutor retryService)
     {
         DriftMethodInvocation<A> invocation = new DriftMethodInvocation<>(
                 invoker,
@@ -106,7 +109,8 @@ class DriftMethodInvocation<A extends Address>
                 addressSelector,
                 addressSelectionContext,
                 stat,
-                ticker);
+                ticker,
+                retryService);
         // invocation can not be started from constructor, because it may start threads that can call back into the unpublished object
         invocation.nextAttempt(true);
         return invocation;
@@ -121,7 +125,8 @@ class DriftMethodInvocation<A extends Address>
             AddressSelector<A> addressSelector,
             Optional<String> addressSelectionContext,
             MethodInvocationStat stat,
-            Ticker ticker)
+            Ticker ticker,
+            BoundedExecutor retryService)
     {
         this.invoker = requireNonNull(invoker, "methodHandler is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
@@ -133,6 +138,7 @@ class DriftMethodInvocation<A extends Address>
         this.stat = requireNonNull(stat, "stat is null");
         this.ticker = requireNonNull(ticker, "ticker is null");
         this.startTime = ticker.read();
+        this.retryService = retryService;
 
         // if this invocation is canceled, cancel the tasks
         super.addListener(() -> {
@@ -204,7 +210,7 @@ class DriftMethodInvocation<A extends Address>
                             handleFailure(address, throwable);
                         }
                     },
-                    directExecutor());
+                    retryService);
         }
         catch (Throwable t) {
             // this should never happen, but ensure that invocation always finishes

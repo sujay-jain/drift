@@ -15,6 +15,7 @@
  */
 package com.facebook.drift.client;
 
+import com.facebook.airlift.concurrent.BoundedExecutor;
 import com.facebook.airlift.testing.TestingTicker;
 import com.facebook.drift.TException;
 import com.facebook.drift.client.ExceptionClassification.HostStatus;
@@ -36,6 +37,8 @@ import com.google.common.net.HostAndPort;
 import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.airlift.units.Duration;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import javax.annotation.concurrent.GuardedBy;
@@ -46,10 +49,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
+import static com.facebook.airlift.concurrent.Threads.daemonThreadsNamed;
 import static com.facebook.drift.client.ExceptionClassification.HostStatus.DOWN;
 import static com.facebook.drift.client.ExceptionClassification.HostStatus.NORMAL;
 import static com.facebook.drift.client.ExceptionClassification.HostStatus.OVERLOADED;
@@ -60,7 +65,9 @@ import static com.google.common.collect.Sets.newConcurrentHashSet;
 import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.TimeUnit.DAYS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
@@ -78,6 +85,30 @@ public class TestDriftMethodInvocation
             false,
             true);
     private static final Error UNEXPECTED_EXCEPTION = new Error("unexpected exception");
+
+    private static BoundedExecutor retryService;
+    private static ExecutorService coreExecutor;
+
+    @BeforeClass
+    public void setup()
+    {
+        coreExecutor = newCachedThreadPool(daemonThreadsNamed("test-retry-service-%s"));
+        retryService = new BoundedExecutor(coreExecutor, 4 * Runtime.getRuntime().availableProcessors());
+    }
+
+    @AfterClass(alwaysRun = true)
+    public void teardown()
+            throws InterruptedException
+    {
+        if (coreExecutor != null) {
+            coreExecutor.shutdownNow();
+            coreExecutor.awaitTermination(1, MINUTES);
+            coreExecutor = null;
+        }
+        if (retryService != null) {
+            retryService = null;
+        }
+    }
 
     @Test(timeOut = 60000)
     public void testFirstTrySuccess()
@@ -715,7 +746,8 @@ public class TestDriftMethodInvocation
                 addressSelector,
                 Optional.empty(),
                 stat,
-                ticker);
+                ticker,
+                retryService);
     }
 
     private static void assertClassifiedException(Throwable cause, ExceptionClassification exceptionClassification, int expectedRetries)
